@@ -1,20 +1,21 @@
-import { useEffect, useState } from 'react'
-import './App.css'
+import { useEffect, useState } from 'react';
+import './App.css';
 
 function App() {
   const [tasks, setTasks] = useState([]);
-  const [title, setTitle] = useState("")
+  const [title, setTitle] = useState("");
 
+  // Lade die Aufgaben bei der Initialisierung
   useEffect(() => {
     fetch("http://localhost:3050/liste_abrufen")
-    .then((res) => res.json())
-    .then(setTasks)
+      .then((res) => res.json())
+      .then(setTasks)
+      .catch((err) => console.error("Fehler beim Abrufen der Aufgaben:", err));
   }, []);
 
+  // Hinzufügen einer neuen Aufgabe
   const itemHinzufuegen = () => {
-
-    //Option 1 für Eingabecheck: falls Eingabefeld leer ist, mach nicht weiter
-
+    // Eingabefeld checken
     if (!title) {
       return;
     }
@@ -22,43 +23,54 @@ function App() {
     fetch("http://localhost:3050/add", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({title}),
-    })      
-    // hier möchte ich, dass die Liste in der App auch aktualisiert wird
-      .then((res) => res.json())
-      .then((neueAufgabe) => setTasks([...tasks, neueAufgabe]))
+      body: JSON.stringify({ title }),
+    })
+    .then((res) => res.json())
+    .then((neueAufgabe) => {
+      // Neue Aufgabe zur Liste hinzufügen
+      setTasks((prevTasks) => [...prevTasks, neueAufgabe[0]]);
+    });
 
-    setTitle("");
-  }
-  
+    setTitle(""); // Eingabefeld nach dem Hinzufügen leeren
+  };
+
+  // Löschen einer Aufgabe
   const itemLoeschen = (id_nummer) => {
-    //console.log("Gedrückte Taste:" + id_nummer);
     fetch(`http://localhost:3050/delete/${id_nummer}`, {
       method: "DELETE",
     })
-
-  }
-
+    .then(() => {
+      // Aufgabe aus der Liste im Frontend entfernen
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id_nummer));
+    })
+    .catch((err) => console.error("Fehler beim Löschen:", err));
+  };
 
   return (
     <>
       <h1>To-Do List</h1>
-      <input value={title}  onChange={(e)=>setTitle(e.target.value)} />
-      <button disabled={!title.trim()} onClick={itemHinzufuegen}>Add</button> {/* Option 2 für Eingabecheck: Button wird disabled bleiben wenn das Eingabefeld leer ist*/}
+      <input 
+        value={title} 
+        onChange={(e) => setTitle(e.target.value)} 
+      />
+      <button 
+        disabled={!title.trim()} 
+        onClick={itemHinzufuegen}
+      >
+        Add
+      </button>
 
       <ul>
-        {// hier gehört der Code, um die To-Do Liste dynamisch zu gestalten
-        tasks.map(({id, title, completed}) => (
+        {tasks.map(({ id, title, completed }) => (
           <li key={id}>
-            <input type='checkbox' />
+            <input type="checkbox" checked={completed} />
             {title}
             <button onClick={() => itemLoeschen(id)}>X</button>
           </li>
-        ))
-        }
+        ))}
       </ul>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
